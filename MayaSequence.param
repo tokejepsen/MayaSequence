@@ -1,0 +1,7 @@
+[RenderExecutable2019]
+Type=multilinemultifilename
+Category=Render Executables
+CategoryOrder=0
+Label=Maya 2019 Render Executable
+Default=C:\Program Files\Autodesk\Maya2019\bin\maya.exe
+Description=The path to the Maya 2019 executable file used for rendering. Enter alternative paths on separate lines.
