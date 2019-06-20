@@ -14,4 +14,9 @@ def open_deadline_port():
     sock.connect(server_address)
 
 
+def load_plugins():
+    cmds.loadPlugin("mtoa.mll", quiet=True)
+
+
+cmds.evalDeferred(load_plugins)
 cmds.evalDeferred(open_deadline_port, lowestPriority=True)

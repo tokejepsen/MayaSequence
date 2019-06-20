@@ -1,4 +1,7 @@
 import socket
+import tempfile
+import os
+import shutil
 
 from Deadline.Plugins import (
     DeadlinePlugin,
@@ -40,6 +43,9 @@ class MayaSequence(DeadlinePlugin):
 
     # Variable to hold connetion to Maya.
     connection = None
+
+    # Variable to hold previous logging.
+    previous_log = ""
 
     # Hook up the callbacks in the constructor.
     def __init__(self):
@@ -91,6 +97,15 @@ class MayaSequence(DeadlinePlugin):
 
         self.SetEnvironmentAndLogInfo("PYTHONPATH", self.GetPluginDirectory())
 
+        # Maya logging.
+        self.maya_logging_directory = tempfile.mkdtemp()
+        self.maya_logging_file = os.path.join(
+            self.maya_logging_directory, "maya_script_editor_output.txt"
+        )
+        self.SetEnvironmentAndLogInfo(
+            "MAYA_CMD_FILE_OUTPUT", self.maya_logging_file
+        )
+
     def SetEnvironmentAndLogInfo(self, envVar, value, description=None):
         """
         Sets an environment variable and prints a message to the log
@@ -140,6 +155,10 @@ class MayaSequence(DeadlinePlugin):
 
     def send_to_maya(self, cmd):
         self.connection.send(cmd)
+        with open(self.maya_logging_file) as f:
+            log = f.read().replace(self.previous_log, "")
+            self.LogInfo(log)
+            self.previous_log += log
         return self.connection.recv(4096)
 
     # Called by Deadline for each task the Slave renders.
@@ -159,31 +178,31 @@ class MayaSequence(DeadlinePlugin):
         scene_file = self.GetPluginInfoEntryWithDefault("SceneFile", "")
         if not self.scene_loaded:
             self.LogInfo("Loading scene: \"{}\".".format(scene_file))
-            print(
-                self.send_to_maya(
-                    "import pymel.core as pc;"
-                    "pc.openFile(\"{}\", force=True)".format(
-                        scene_file.strip().replace("\\", "/")
-                    )
+            self.send_to_maya(
+                "import pymel.core as pc;"
+                "pc.openFile(\"{}\", force=True)".format(
+                    scene_file.strip().replace("\\", "/")
                 )
             )
             self.scene_loaded = True
 
         # Rendering frames.
-        print(
-            self.send_to_maya(
-                "import mayasequence_lib;import maya.cmds;"
-                "mayasequence_lib.render_sequence({}, {})".format(
-                    self.GetStartFrame(),
-                    self.GetEndFrame()
-                )
+        self.LogInfo("Rendering frames: {} to {}.".format(
+                self.GetStartFrame(),
+                self.GetEndFrame()
+            )
+        )
+        self.send_to_maya(
+            "import mayasequence_lib;import maya.cmds;"
+            "mayasequence_lib.render_sequence({}, {})".format(
+                self.GetStartFrame(),
+                self.GetEndFrame()
             )
         )
 
     # Called by Deadline when the job ends.
     def EndJob(self):
         self.ShutdownMonitoredManagedProcess(self.ProcessName)
-
 
 ######################################################################
 # This is the ManagedProcess class that is launched above.
@@ -238,10 +257,10 @@ class MayaSequenceProcess(ManagedProcess):
 
     # Callback to get the arguments that will be passed to the executable.
     def RenderArgument(self):
-        data = {}
-        arguments = " -proj \"{project_path}\""
-
-        path = self.deadlinePlugin.GetPluginInfoEntryWithDefault("ProjectPath", "")
-        data["project_path"] = path.strip().replace("\\", "/")
-
-        return arguments.format(**data)
+        path = self.deadlinePlugin.GetPluginInfoEntryWithDefault(
+            "ProjectPath", ""
+        )
+        arguments = " -proj \"{}\" -noAutoloadPlugins".format(
+            path.strip().replace("\\", "/")
+        )
+        return arguments
