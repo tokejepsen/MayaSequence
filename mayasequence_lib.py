@@ -6,6 +6,7 @@ import traceback
 import pymel.core as pc
 
 from maya import mel, cmds
+import maya.app.renderSetup.model.renderSetup as renderSetup
 
 
 def render_frame(frame):
@@ -63,8 +64,17 @@ def render_frame(frame):
 
 
 def render_sequence(start_frame, end_frame):
-    try:
-        for count in range(start_frame, end_frame + 1):
+    # Get all renderable layers.
+    render_setup = renderSetup.instance()
+    render_layers = render_setup.getRenderLayers()
+
+    renderable_layers = []
+    for render_layer in render_layers:
+        if render_layer.isRenderable():
+            renderable_layers.append(render_layer)
+
+    # Render each layer frame.
+    for count in range(start_frame, end_frame + 1):
+        for layer in renderable_layers:
+            render_setup.switchToLayer(layer)
             render_frame(count)
-    except:
-        print(traceback.format_exc())
