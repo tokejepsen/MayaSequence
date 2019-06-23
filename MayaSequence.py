@@ -154,12 +154,16 @@ class MayaSequence(DeadlinePlugin):
             break
 
     def send_to_maya(self, cmd):
+        self.LogInfo("Sending: {}".format(repr(cmd)))
         self.connection.send(cmd)
+        self.connection.recv(4096)
+        self.read_maya_script_editor_output()
+
+    def read_maya_script_editor_output(self):
         with open(self.maya_logging_file) as f:
             log = f.read().replace(self.previous_log, "")
             self.LogInfo(log)
             self.previous_log += log
-        return self.connection.recv(4096)
 
     # Called by Deadline for each task the Slave renders.
     def RenderTasks(self):
@@ -169,6 +173,7 @@ class MayaSequence(DeadlinePlugin):
             self.LogInfo("Waiting until maya is ready to go.")
             self.wait_for_maya_boot()
             self.maya_booted = True
+            self.read_maya_script_editor_output()
 
             # Establish connection.
             self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -193,7 +198,7 @@ class MayaSequence(DeadlinePlugin):
             )
         )
         self.send_to_maya(
-            "import mayasequence_lib;import maya.cmds;"
+            "import mayasequence_lib;"
             "mayasequence_lib.render_sequence({}, {})".format(
                 self.GetStartFrame(),
                 self.GetEndFrame()
@@ -203,6 +208,7 @@ class MayaSequence(DeadlinePlugin):
     # Called by Deadline when the job ends.
     def EndJob(self):
         self.ShutdownMonitoredManagedProcess(self.ProcessName)
+
 
 ######################################################################
 # This is the ManagedProcess class that is launched above.

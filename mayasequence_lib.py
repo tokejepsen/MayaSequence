@@ -1,7 +1,6 @@
 import os
 import shutil
 import difflib
-import traceback
 
 import pymel.core as pc
 
@@ -47,21 +46,6 @@ def render_frame(frame):
         "\"{save_to_render_view}\")".format(**data)
     )
 
-    # Copy images out of "tmp" folder, because sequence rendering stores in
-    # "tmp".
-    first_image_path = pc.renderSettings(firstImageName=True, fullPath=True)[0]
-    first_image_name = os.path.basename(first_image_path)
-    images_directory = os.path.dirname(first_image_path)
-    tmp_directory = os.path.join(images_directory, "tmp")
-    closest_match = difflib.get_close_matches(
-        first_image_name, os.listdir(tmp_directory)
-    )[0]
-
-    shutil.move(
-        os.path.join(tmp_directory, closest_match),
-        os.path.join(images_directory, first_image_name)
-    )
-
 
 def render_sequence(start_frame, end_frame):
     # Get all renderable layers.
@@ -69,12 +53,17 @@ def render_sequence(start_frame, end_frame):
     render_layers = render_setup.getRenderLayers()
 
     renderable_layers = []
-    for render_layer in render_layers:
-        if render_layer.isRenderable():
-            renderable_layers.append(render_layer)
+    for layer in render_layers:
+        if layer.isRenderable():
+            renderable_layers.append(layer)
 
-    # Render each layer frame.
-    for count in range(start_frame, end_frame + 1):
-        for layer in renderable_layers:
-            render_setup.switchToLayer(layer)
+    print(
+        "Renderable layers: {}".format([x.name() for x in renderable_layers])
+    )
+
+    for layer in renderable_layers:
+        print("Switching to: {}".format(layer.name()))
+        render_setup.switchToLayer(layer)
+        for count in range(start_frame, end_frame + 1):
+            print("Rendering frame: {}".format(count))
             render_frame(count)
