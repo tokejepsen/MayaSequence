@@ -156,7 +156,8 @@ class MayaSequence(DeadlinePlugin):
     def send_to_maya(self, cmd):
         self.LogInfo("Sending: {}".format(repr(cmd)))
         self.connection.send(cmd)
-        self.connection.recv(4096)
+        data = self.connection.recv(4096)
+        self.LogInfo(data)
         self.read_maya_script_editor_output()
 
     def read_maya_script_editor_output(self):
