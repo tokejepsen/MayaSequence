@@ -2,7 +2,7 @@ import os
 import shutil
 import difflib
 
-import pymel.core as pc
+import pymel.core as pm
 
 from maya import mel, cmds
 import maya.app.renderSetup.model.renderSetup as renderSetup
@@ -11,7 +11,7 @@ import maya.app.renderSetup.model.renderSetup as renderSetup
 def render_frame(frame):
 
     # Set frame range.
-    render_globals = pc.PyNode("defaultRenderGlobals")
+    render_globals = pm.PyNode("defaultRenderGlobals")
     render_globals.startFrame.set(frame)
     render_globals.endFrame.set(frame)
 
@@ -25,7 +25,7 @@ def render_frame(frame):
     }
 
     # Get render camera.
-    for node in pc.ls(type="camera"):
+    for node in pm.ls(type="camera"):
         if node.renderable.get():
             data["camera"] = node.getParent().name()
 
@@ -37,8 +37,8 @@ def render_frame(frame):
     )
 
     # Get resolution.
-    data["width"] = pc.getAttr("defaultResolution.width")
-    data["height"] = pc.getAttr("defaultResolution.height")
+    data["width"] = pm.getAttr("defaultResolution.width")
+    data["height"] = pm.getAttr("defaultResolution.height")
 
     # Render sequence.
     mel.eval(
@@ -67,3 +67,31 @@ def render_sequence(start_frame, end_frame):
         for count in range(start_frame, end_frame + 1):
             print("Rendering frame: {}".format(count))
             render_frame(count)
+
+        # Move renders to expected output path.
+        first_image = pm.renderSettings(
+            firstImageName=True,
+            fullPath=True
+        )[0]
+        expected_output_path = os.path.join(
+            cmds.workspace(query=True, rootDirectory=True),
+            pm.workspace.fileRules["images"]
+        )
+        prefix_directories = os.path.dirname(first_image).replace(
+            expected_output_path, ""
+        )
+        actual_output_path = (
+            os.path.join(expected_output_path, "tmp") + prefix_directories
+        )
+        for f in os.listdir(actual_output_path):
+            source = os.path.join(actual_output_path, f)
+            destination = os.path.join(
+                expected_output_path + prefix_directories, f.replace("_1", "")
+            )
+
+            if not os.path.exists(os.path.dirname(destination)):
+                os.makedirs(os.path.dirname(destination))
+
+            print("Moving \"{}\" to \"{}\"".format(source, destination))
+
+            shutil.move(source, destination)
