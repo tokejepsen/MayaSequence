@@ -1,7 +1,7 @@
 import socket
 import tempfile
 import os
-import shutil
+import time
 
 from Deadline.Plugins import (
     DeadlinePlugin,
@@ -143,6 +143,8 @@ class MayaSequence(DeadlinePlugin):
         server_address = ("localhost", 10000)
         self.LogInfo("Starting up on {}".format(server_address))
         sock.bind(server_address)
+
+        sock.settimeout(45)
 
         # Listen for incoming connections
         sock.listen(1)
