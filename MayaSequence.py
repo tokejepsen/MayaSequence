@@ -200,13 +200,25 @@ class MayaSequence(DeadlinePlugin):
                 self.GetEndFrame()
             )
         )
-        self.send_to_maya(
-            "import mayasequence_lib;"
-            "mayasequence_lib.render_sequence({}, {})".format(
-                self.GetStartFrame(),
-                self.GetEndFrame()
+
+        renderlayer = self.GetPluginInfoEntryWithDefault("RenderLayer", "")
+        if renderlayer:
+            self.send_to_maya(
+                "import mayasequence_lib;"
+                "mayasequence_lib.render_sequence({}, {}, \"{}\")".format(
+                    self.GetStartFrame(),
+                    self.GetEndFrame(),
+                    renderlayer
+                )
             )
-        )
+        else:
+            self.send_to_maya(
+                "import mayasequence_lib;"
+                "mayasequence_lib.render_sequence({}, {})".format(
+                    self.GetStartFrame(),
+                    self.GetEndFrame()
+                )
+            )
 
     # Called by Deadline when the job ends.
     def EndJob(self):

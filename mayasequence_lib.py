@@ -47,14 +47,19 @@ def render_frame(frame):
     )
 
 
-def render_sequence(start_frame, end_frame):
+def render_sequence(start_frame, end_frame, renderlayer_name=None):
     # Get all renderable layers.
     render_setup = renderSetup.instance()
     render_layers = render_setup.getRenderLayers()
 
     renderable_layers = []
     for layer in render_layers:
-        if layer.isRenderable():
+        # Add all render layers when none is specified.
+        if renderlayer_name is None and layer.isRenderable():
+            renderable_layers.append(layer)
+
+        # Only add the render layer if its requested.
+        if ("rs_" + layer.name()) == renderlayer_name:
             renderable_layers.append(layer)
 
     print(
