@@ -1,6 +1,6 @@
 import os
 import shutil
-import difflib
+import tempfile
 
 import pymel.core as pm
 
@@ -48,6 +48,15 @@ def render_frame(frame):
 
 
 def render_sequence(start_frame, end_frame, renderlayer_name=None):
+    # Setting output to local temp directory.
+    output_path = os.path.join(
+        cmds.workspace(query=True, rootDirectory=True),
+        pm.workspace.fileRules["images"]
+    ).replace("\\", "/")
+
+    temp_path = tempfile.mkdtemp().replace("\\", "/")
+    pm.workspace.fileRules["images"] = temp_path
+
     # Get all renderable layers.
     render_setup = renderSetup.instance()
     render_layers = render_setup.getRenderLayers()
@@ -89,10 +98,12 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
             os.path.join(expected_output_path, "tmp") + prefix_directories
         )
         for f in os.listdir(actual_output_path):
-            source = os.path.join(actual_output_path, f)
+            source = os.path.join(actual_output_path, f).replace("\\", "/")
             destination = os.path.join(
                 expected_output_path + prefix_directories, f.replace("_1", "")
-            )
+            ).replace("\\", "/")
+
+            destination = destination.replace(temp_path, output_path)
 
             if not os.path.exists(os.path.dirname(destination)):
                 os.makedirs(os.path.dirname(destination))
@@ -100,3 +111,9 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
             print("Moving \"{}\" to \"{}\"".format(source, destination))
 
             shutil.move(source, destination)
+
+    # Clean up.
+    print("Cleaning up: {}".format(temp_path))
+    shutil.rmtree(temp_path)
+
+    pm.workspace.fileRules["images"] = output_path
