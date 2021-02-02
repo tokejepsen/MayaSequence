@@ -88,12 +88,6 @@ class MayaSequence(DeadlinePlugin):
             "1",
             description="ADSK In Product Messaging"
         )
-        self.SetEnvironmentAndLogInfo(
-            "MAYA_OPENCL_IGNORE_DRIVER_VERSION", "1"
-        )
-        self.SetEnvironmentAndLogInfo(
-            "MAYA_VP2_DEVICE_OVERRIDE", "VirtualDeviceDx11"
-        )
 
         self.SetEnvironmentAndLogInfo("PYTHONPATH", self.GetPluginDirectory())
 
