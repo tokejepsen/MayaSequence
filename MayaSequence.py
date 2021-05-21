@@ -1,7 +1,7 @@
 import socket
 import tempfile
 import os
-import time
+import random
 
 from Deadline.Plugins import (
     DeadlinePlugin,
@@ -55,7 +55,7 @@ class MayaSequence(DeadlinePlugin):
         self.EndJobCallback += self.EndJob
 
     # Clean up the plugin.
-    def Cleanup():
+    def Cleanup(self):
         del self.InitializeProcessCallback
         del self.StartJobCallback
         del self.RenderTasksCallback
@@ -68,6 +68,16 @@ class MayaSequence(DeadlinePlugin):
 
     # Called by Deadline to initialize the process.
     def InitializeProcess(self):
+        self.launch_port = random.randrange(10000, 11000)
+        self.render_port = random.randrange(7005, 8000)
+
+        self.SetEnvironmentAndLogInfo(
+            "MAYASEQUENCE_LAUNCH_PORT", str(self.launch_port)
+        )
+        self.SetEnvironmentAndLogInfo(
+            "MAYASEQUENCE_RENDER_PORT", str(self.render_port)
+        )
+
         # Set the plugin specific settings.
         self.SingleFramesOnly = False
         self.PluginType = PluginType.Advanced
@@ -134,11 +144,11 @@ class MayaSequence(DeadlinePlugin):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Bind the socket to the port
-        server_address = ("localhost", 10000)
+        server_address = ("localhost", self.launch_port)
         self.LogInfo("Starting up on {}".format(server_address))
         sock.bind(server_address)
 
-        sock.settimeout(45)
+        sock.settimeout(120)
 
         # Listen for incoming connections
         sock.listen(1)
@@ -174,7 +184,7 @@ class MayaSequence(DeadlinePlugin):
 
             # Establish connection.
             self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.connection.connect(("localhost", 7005))
+            self.connection.connect(("localhost", self.render_port))
 
         # Load scene.
         scene_file = self.GetPluginInfoEntryWithDefault("SceneFile", "")
@@ -233,7 +243,7 @@ class MayaSequenceProcess(ManagedProcess):
         self.deadlinePlugin = deadlinePlugin
 
     # Clean up the managed process.
-    def Cleanup():
+    def Cleanup(self):
         # Clean up stdout handler callbacks.
         for stdoutHandler in self.StdoutHandlers:
             del stdoutHandler.HandleCallback
@@ -275,7 +285,7 @@ class MayaSequenceProcess(ManagedProcess):
         path = self.deadlinePlugin.GetPluginInfoEntryWithDefault(
             "ProjectPath", ""
         )
-        arguments = " -proj \"{}\" -noAutoloadPlugins".format(
+        arguments = " -proj \"{}\"".format(
             path.strip().replace("\\", "/")
         )
         return arguments
