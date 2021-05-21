@@ -94,13 +94,35 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
         prefix_directories = os.path.dirname(first_image).replace(
             expected_output_path, ""
         )
-        actual_output_path = (
-            os.path.join(expected_output_path, "tmp") + prefix_directories
+
+        renderer = cmds.getAttr("defaultRenderGlobals.currentRenderer")
+        actual_prefix_directories = os.path.dirname(first_image).replace(
+            expected_output_path, ""
         )
+        # Maya Hardware seems to always have "masterLayer" as the layer name.
+        if renderer == "mayaHardware2":
+            actual_prefix_directories = actual_prefix_directories.replace(
+                layer.name(), "masterLayer"
+            )
+
+        actual_output_path = (
+            os.path.join(expected_output_path, "tmp") +
+            actual_prefix_directories
+        )
+
         for f in os.listdir(actual_output_path):
             source = os.path.join(actual_output_path, f).replace("\\", "/")
+
+            # Rendering through Arnold adds "_1" to the file name.
+            destination_filename = f.replace("_1", "")
+            # Rendering through Maya Hardware seems to always be "masterLayer"
+            # as the layer name.
+            destination_filename = destination_filename.replace(
+                "masterLayer", layer.name()
+            )
+
             destination = os.path.join(
-                expected_output_path + prefix_directories, f.replace("_1", "")
+                expected_output_path + prefix_directories, destination_filename
             ).replace("\\", "/")
 
             destination = destination.replace(temp_path, output_path)
