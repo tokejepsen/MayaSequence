@@ -48,6 +48,12 @@ def render_frame(frame):
 
 
 def render_sequence(start_frame, end_frame, renderlayer_name=None):
+    # Evaluate pre render mel.
+    pre_mel = cmds.getAttr("defaultRenderGlobals.preMel")
+    if pre_mel:
+        print("Evaluating Pre Render MEL:\n{}".format(pre_mel))
+        mel.eval(pre_mel)
+
     # Setting output to local temp directory.
     output_path = os.path.join(
         cmds.workspace(query=True, rootDirectory=True),
