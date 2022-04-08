@@ -165,6 +165,7 @@ class MayaSequence(DeadlinePlugin):
         data = self.connection.recv(4096)
         self.LogInfo(data)
         self.read_maya_script_editor_output()
+        return data
 
     def read_maya_script_editor_output(self):
         with open(self.maya_logging_file) as f:
@@ -206,8 +207,9 @@ class MayaSequence(DeadlinePlugin):
         )
 
         renderlayer = self.GetPluginInfoEntryWithDefault("RenderLayer", "")
+        results = None
         if renderlayer:
-            self.send_to_maya(
+            results = self.send_to_maya(
                 "import mayasequence_lib;"
                 "mayasequence_lib.render_sequence({}, {}, \"{}\")".format(
                     self.GetStartFrame(),
@@ -216,12 +218,17 @@ class MayaSequence(DeadlinePlugin):
                 )
             )
         else:
-            self.send_to_maya(
+            results = self.send_to_maya(
                 "import mayasequence_lib;"
                 "mayasequence_lib.render_sequence({}, {})".format(
                     self.GetStartFrame(),
                     self.GetEndFrame()
                 )
+            )
+
+        if "No module named mayasequence_lib" in results:
+            raise ImportError(
+                "No module named mayasequence_lib in Maya session."
             )
 
     # Called by Deadline when the job ends.
