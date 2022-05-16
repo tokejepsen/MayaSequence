@@ -293,7 +293,8 @@ class MayaSequenceProcess(ManagedProcess):
 
     # Callback to get the executable used for rendering.
     def RenderExecutable(self):
-        return self.deadlinePlugin.GetConfigEntry("RenderExecutable2019")
+        version = self.deadlinePlugin.GetPluginInfoEntry("Version")
+        return self.deadlinePlugin.GetConfigEntry("RenderExecutable" + version)
 
     # Callback to get the arguments that will be passed to the executable.
     def RenderArgument(self):
