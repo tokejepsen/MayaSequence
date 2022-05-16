@@ -187,6 +187,14 @@ class MayaSequence(DeadlinePlugin):
             self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.connection.connect(("localhost", self.render_port))
 
+        # Turn off cached playback. This can cause issues when renders are
+        # jumping back and forth on the timeline.
+        self.send_to_maya(
+            "from maya.plugin.evaluator.cache_preferences"
+            " import CachePreferenceEnabled;"
+            "CachePreferenceEnabled().set_value(False)"
+        )
+
         # Load scene.
         scene_file = self.GetPluginInfoEntryWithDefault("SceneFile", "")
         if not self.scene_loaded:
