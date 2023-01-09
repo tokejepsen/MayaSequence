@@ -140,6 +140,15 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
 
             shutil.move(source, destination)
 
+            # Validate destination file.
+            msg = "{} was not moved correctly from {}".format(
+                destination, source
+            )
+            assert os.path.exists(destination), msg
+
+            if os.path.exists(destination):
+                print("{} moved to {}".format(source, destination))
+
     # Clean up.
     print("Cleaning up: {}".format(temp_path))
     shutil.rmtree(temp_path)
