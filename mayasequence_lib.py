@@ -115,6 +115,11 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
             os.path.join(expected_output_path, "tmp") +
             actual_prefix_directories
         )
+        # Vray seems to avoid the "tmp" subdirectory.
+        if renderer == "vray":
+            actual_output_path = (
+                expected_output_path + actual_prefix_directories
+            )
 
         for f in os.listdir(actual_output_path):
             source = os.path.join(actual_output_path, f).replace("\\", "/")
