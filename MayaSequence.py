@@ -161,9 +161,20 @@ class MayaSequence(DeadlinePlugin):
 
     def send_to_maya(self, cmd):
         self.LogInfo("Sending: {}".format(repr(cmd)))
-        self.connection.send(cmd)
+
+        # Wrap code in try/except.
+        wrapped_cmd = "import traceback\ntry:"
+        for line in cmd.split("\n"):
+            wrapped_cmd += "\t" + line + "\n"
+        wrapped_cmd += "except Exception as e:"
+        wrapped_cmd += "\n\traise Exception(traceback.format_exc())"
+
+        self.connection.send(wrapped_cmd)
         data = self.connection.recv(4096)
-        self.LogInfo(data)
+
+        if "error:" in data.lower():
+            raise Exception(data)
+
         self.read_maya_script_editor_output()
         return data
 
