@@ -200,8 +200,8 @@ class MayaSequence(DeadlinePlugin):
         if not self.scene_loaded:
             self.LogInfo("Loading scene: \"{}\".".format(scene_file))
             self.send_to_maya(
-                "import pymel.core as pc;"
-                "pc.openFile(\"{}\", force=True)".format(
+                "from maya import cmds;"
+                "cmds.file(\"{}\", open=True, force=True)".format(
                     scene_file.strip().replace("\\", "/")
                 )
             )

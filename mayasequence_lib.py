@@ -2,8 +2,6 @@ import os
 import shutil
 import tempfile
 
-import pymel.core as pm
-
 from maya import mel, cmds
 import maya.app.renderSetup.model.renderSetup as renderSetup
 
@@ -11,9 +9,9 @@ import maya.app.renderSetup.model.renderSetup as renderSetup
 def render_frame(frame):
 
     # Set frame range.
-    render_globals = pm.PyNode("defaultRenderGlobals")
-    render_globals.startFrame.set(frame)
-    render_globals.endFrame.set(frame)
+    render_globals = "defaultRenderGlobals"
+    cmds.setAttr(render_globals + ".startFrame", frame)
+    cmds.setAttr(render_globals + ".endFrame", frame)
 
     # Collect sequence render data.
     data = {
@@ -25,9 +23,11 @@ def render_frame(frame):
     }
 
     # Get render camera.
-    for node in pm.ls(type="camera"):
-        if node.renderable.get():
-            data["camera"] = node.getParent().name()
+    for node in cmds.ls(type="camera"):
+        if cmds.getAttr(node + ".renderable"):
+            data["camera"] = cmds.listRelatives(
+                node, parent=True, fullPath=True
+            )[0]
 
     # Sequence render mel function.
     data["sequence_render_function"] = cmds.renderer(
@@ -37,8 +37,8 @@ def render_frame(frame):
     )
 
     # Get resolution.
-    data["width"] = pm.getAttr("defaultResolution.width")
-    data["height"] = pm.getAttr("defaultResolution.height")
+    data["width"] = cmds.getAttr("defaultResolution.width")
+    data["height"] = cmds.getAttr("defaultResolution.height")
 
     # Render sequence.
     mel.eval(
@@ -57,11 +57,11 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
     # Setting output to local temp directory.
     output_path = os.path.join(
         cmds.workspace(query=True, rootDirectory=True),
-        pm.workspace.fileRules["images"]
+        cmds.workspace(fileRuleEntry="images")
     ).replace("\\", "/")
 
     temp_path = tempfile.mkdtemp().replace("\\", "/")
-    pm.workspace.fileRules["images"] = temp_path
+    cmds.workspace(fileRule=["images", temp_path])
 
     # Get all renderable layers.
     render_setup = renderSetup.instance()
@@ -89,13 +89,13 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
             render_frame(count)
 
         # Move renders to expected output path.
-        first_image = pm.renderSettings(
+        first_image = cmds.renderSettings(
             firstImageName=True,
             fullPath=True
         )[0]
         expected_output_path = os.path.join(
             cmds.workspace(query=True, rootDirectory=True),
-            pm.workspace.fileRules["images"]
+            cmds.workspace(fileRuleEntry="images")
         )
         prefix_directories = os.path.dirname(first_image).replace(
             expected_output_path, ""
@@ -158,4 +158,4 @@ def render_sequence(start_frame, end_frame, renderlayer_name=None):
     print("Cleaning up: {}".format(temp_path))
     shutil.rmtree(temp_path)
 
-    pm.workspace.fileRules["images"] = output_path
+    cmds.workspace(fileRule=["images", output_path])
